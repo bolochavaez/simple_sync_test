@@ -7,27 +7,31 @@
 #include <time.h>
 #include <sys/stat.h>
 #include <string.h>
-
-typedef struct io_file {
-    int fd;
-    int current_position;
-    unsigned long long int writes;
-    unsigned long long int reads;
-} IOFile;
-
+#include "sync.h"
 
 int io_file_reset_pos(IOFile * io_file){
     lseek(io_file->fd, 0, SEEK_SET);
     io_file->current_position = 0;
     return 0;
-
 }
 
 int io_file_get_size(IOFile * io_file){
     struct stat stats;
     fstat(io_file->fd, &stats);
     return (int)stats.st_size;
+}
 
+int delete_io_file(IOFile * io_file){
+    close(io_file->fd);
+    free(io_file);
+    return 1;
+}
+
+int io_file_print_stats(IOFile * io_file, long int time_seconds){
+    printf("writes: %llu \n", io_file->writes);
+    printf("MB per second: %d \n", io_file->writes/ 1024 / 1024  / time_seconds);
+    printf("reads: %llu \n", io_file->reads);
+    printf("MB per second: %d \n", io_file->reads/ 1024 / 1024  / time_seconds);
 }
 
 int read_file(IOFile * io_file, int block_size){
@@ -49,7 +53,7 @@ int write_file(IOFile * io_file, int block_size){
     }
     int bytes_written = write(io_file->fd, buffer, block_size);
     if(bytes_written == -1){
-        perror("read error: ");
+        perror("write error: ");
     }
 
     io_file->current_position += bytes_written;
@@ -57,7 +61,6 @@ int write_file(IOFile * io_file, int block_size){
     free(buffer);
     return bytes_written;
 }
-
 
 IOFile * io_file(const char * file_name){
     int file_desc = open(file_name, O_RDWR | O_CREAT , S_IRWXU | S_IRWXG | S_IRWXO);
@@ -69,13 +72,6 @@ IOFile * io_file(const char * file_name){
     return io_file_object;
 }
 
-
-int delete_io_file(IOFile * io_file){
-    close(io_file->fd);
-    free(io_file);
-    return 1;
-}
-
 int write_worker(IOFile * io_file, long int time_seconds){
     time_t c_time = time(NULL);
     long int int_time_start = (long int) c_time;
@@ -84,12 +80,14 @@ int write_worker(IOFile * io_file, long int time_seconds){
     printf("timestamp: %ld\n", int_current_time);
     printf("diff: %ld\n", int_current_time - int_time_start);
     while((int_current_time - int_time_start) < time_seconds){
+        if  (io_file->current_position >=  io_file_get_size(io_file)){
+            io_file_reset_pos(io_file);
+        }
         write_file(io_file, 1024);
         int_current_time = (long int) time(NULL);
     }
     return 1;
 }
-
 
 int read_worker(IOFile * io_file, long int time_seconds){
     time_t c_time = time(NULL);
@@ -99,22 +97,14 @@ int read_worker(IOFile * io_file, long int time_seconds){
     printf("timestamp: %ld\n", int_current_time);
     printf("diff: %ld\n", int_current_time - int_time_start);
     while((int_current_time - int_time_start) < time_seconds){
-	if  (io_file->current_position >=  io_file_get_size(io_file)){
+        if  (io_file->current_position >=  io_file_get_size(io_file)){
             io_file_reset_pos(io_file);
-	}
+        }
         read_file(io_file, 1024);
         int_current_time = (long int) time(NULL);
     }
     return 1;
 }
-
-int io_file_print_stats(IOFile * io_file, long int time_seconds){
-    printf("writes: %llu \n", io_file->writes);
-    printf("MB per second: %d \n", io_file->writes/ 1024 / 1024  / time_seconds);
-    printf("reads: %llu \n", io_file->reads);
-    printf("MB per second: %d \n", io_file->reads/ 1024 / 1024  / time_seconds);
-}
-
 
 int main(int argc, char * argv[]){
     //who cares
