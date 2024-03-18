@@ -2,8 +2,12 @@
 #include "sync.h"
 
 static PyObject* sync_test(PyObject * self, PyObject* args) {
-    char filename[120] = "python_test";
+    char filename[120] = {0};
     int runtime = 3;
+
+    if (!PyArg_ParseTuple(args, "si", &filename, &runtime)) {
+        return NULL;
+    }
     IOFile * test_file =  io_file(filename);
     write_worker(test_file, runtime);
     io_file_reset_pos(test_file);
@@ -14,7 +18,7 @@ static PyObject* sync_test(PyObject * self, PyObject* args) {
 }
 
 static PyMethodDef myMethods[] = {
-    {"sync_test", sync_test, METH_NOARGS, "runs a sync test"},
+    {"sync_test", sync_test, METH_VARARGS, "runs a sync test"},
     {NULL,NULL,0,NULL}
 
 };
