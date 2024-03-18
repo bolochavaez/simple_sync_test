@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <time.h>
 #include <sys/stat.h>
+#include <string.h>
 
 typedef struct io_file {
     int fd;
@@ -59,7 +60,7 @@ int write_file(IOFile * io_file, int block_size){
 
 
 IOFile * io_file(const char * file_name){
-    int file_desc = open(file_name, O_RDWR | O_CREAT);
+    int file_desc = open(file_name, O_RDWR | O_CREAT , S_IRWXU | S_IRWXG | S_IRWXO);
     if (file_desc == -1){
         perror("could not open file");
     }
@@ -107,20 +108,41 @@ int read_worker(IOFile * io_file, long int time_seconds){
     return 1;
 }
 
+int io_file_print_stats(IOFile * io_file, long int time_seconds){
+    printf("writes: %llu \n", io_file->writes);
+    printf("MB per second: %d \n", io_file->writes/ 1024 / 1024  / time_seconds);
+    printf("reads: %llu \n", io_file->reads);
+    printf("MB per second: %d \n", io_file->reads/ 1024 / 1024  / time_seconds);
+}
 
 
-
-int main(){
+int main(int argc, char * argv[]){
     //who cares
     srand(1);
+    int opt;
+    long int runtime = 3;
+    char filename[128];
+    strcpy(filename, "filename");
+    while(( opt = getopt(argc, argv, "t:f:")) != -1 ){
+        switch(opt) {
+            case 't':
+                runtime = (long int) atoi(optarg);
+		break;
+            case 'f':
+                strcpy(filename, optarg);
+		break;
 
-    IOFile * test_file =  io_file("filename");
-    write_worker(test_file, 3);
-    printf("writes: %llu \n", test_file->writes);
-    printf("MB per second: %d \n", test_file->writes/ 1024 / 1024  / 3);
+	default:
+		printf("Invalid parameter");
+		exit(EXIT_FAILURE);
+	}
+
+    }
+
+    IOFile * test_file =  io_file(filename);
+    write_worker(test_file, runtime);
     io_file_reset_pos(test_file);
-    read_worker(test_file, 3);
-    printf("reads: %llu \n", test_file->reads);
-    printf("MB per second: %d \n", test_file->reads/ 1024 / 1024  / 3);
+    read_worker(test_file, runtime);
+    io_file_print_stats(test_file, runtime);
     delete_io_file(test_file);
 }
