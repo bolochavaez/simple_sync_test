@@ -2,7 +2,7 @@
 #include "sync.h"
 
 static PyObject* sync_test(PyObject * self, PyObject* args) {
-    char filename[120] = {0};
+    char * filename;
     int runtime = 3;
 
     if (!PyArg_ParseTuple(args, "si", &filename, &runtime)) {
