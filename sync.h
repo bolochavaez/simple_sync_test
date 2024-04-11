@@ -10,10 +10,13 @@
 
 typedef struct io_file {
     int fd;
-    int current_position;
+    unsigned long long int current_position;
     unsigned long long int writes;
     unsigned long long int reads;
     int direct;
+    unsigned long long int * lba_history; 
+    unsigned long long int * bs_history; 
+    unsigned long long int history_size;
 } IOFile;
 
 typedef struct workload {
