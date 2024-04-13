@@ -17,6 +17,7 @@ typedef struct io_file {
     unsigned long long int * lba_history; 
     unsigned long long int * bs_history; 
     unsigned long long int history_size;
+    off_t size;
 } IOFile;
 
 typedef struct workload {
@@ -46,6 +47,6 @@ int delete_io_file(IOFile *);
 int io_file_print_stats(IOFile *, long int);
 int read_file(IOFile *, off_t, off_t );
 int write_file(IOFile *, off_t, off_t );
-IOFile * io_file(const char *, int);
+IOFile * io_file(const char *, int, off_t);
 int write_worker(IOFile *, long int);
 int read_worker(IOFile *, long int);

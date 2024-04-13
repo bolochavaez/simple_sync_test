@@ -96,7 +96,7 @@ int write_file(IOFile * io_file, off_t block_size, off_t offset){
     return bytes_written;
 }
 
-IOFile * io_file(const char * file_name, int direct){
+IOFile * io_file(const char * file_name, int direct, off_t size){
     int open_flags = O_RDWR | O_CREAT;
     if(direct) open_flags = open_flags | O_DIRECT;
     int file_desc = open(file_name, open_flags, S_IRWXU | S_IRWXG | S_IRWXO);
@@ -107,7 +107,7 @@ IOFile * io_file(const char * file_name, int direct){
     unsigned long long int * bs_history = (unsigned long long int *)  malloc(sizeof(unsigned long long int));
 
     IOFile * io_file_object = (IOFile*) malloc(sizeof(IOFile));
-    * io_file_object = (IOFile){file_desc, 0, 0, 0, direct, lba_history, bs_history, 1};
+    * io_file_object = (IOFile){file_desc, 0, 0, 0, direct, lba_history, bs_history, 1, size};
     return io_file_object;
 }
 
@@ -239,7 +239,7 @@ int main(int argc, char * argv[]){
 
     }
 
-    IOFile * test_file =  io_file(filename, 1);
+    IOFile * test_file =  io_file(filename, 1, 1000000);
     Workload * test_workload = workload(1024, 1, runtime, 1000000, 1, 0, 0);
     Worker * test_worker = worker(test_file, test_workload, &sync_engine);
     worker_run(test_worker);
